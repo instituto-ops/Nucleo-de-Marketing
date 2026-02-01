@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { NeuroContext } from "../types";
 import { getContextString } from "./NeuroLibrary";
 import { generateAdFromTemplate } from './TemplateEngine';
+import { AIRuntime } from './AIRuntime'; // Importa o novo Runtime
 
 interface AIResponse {
   text: string | null;
@@ -15,6 +16,8 @@ export interface AdCopy {
     source: AIResponse['source'];
 }
 
+// A função callGemini não é mais usada diretamente aqui, mas pode ser mantida
+// para futuras integrações ou por ser usada em outro lugar.
 async function callGemini(systemPrompt: string, userPrompt: string) {
   const result = await invoke<{ text: string }>('call_gemini', {
     request: {
@@ -35,52 +38,27 @@ async function callGemini(systemPrompt: string, userPrompt: string) {
 
 /**
  * Serviço de Inteligência Artificial.
- * Encapsula a lógica de chamada de API híbrida (Nuvem com Fallback Local).
+ * Encapsula a lógica de chamada de IA, agora delegando para o AIRuntime.
  */
 export class AIService {
   /**
-   * Chama o cérebro digital (IA) com um prompt de sistema e de usuário.
-   * Tenta a API da Groq primeiro e faz fallback para Ollama local.
+   * Chama o cérebro digital (IA) através do Runtime Central.
+   * O Runtime gerencia a lógica de fallback entre providers.
    */
   private async _callAI(systemPrompt: string, userPrompt: string): Promise<AIResponse> {
-    /*
-    try {
-      // 1️⃣ Gemini (Cloud Principal)
-      return await callGemini(systemPrompt, userPrompt);
-    } catch (e1) {
-      console.warn('Gemini falhou, tentando Ollama', e1);
-    */
-      try {
-        // 2️⃣ Ollama (Local)
-        const response = await fetch('http://localhost:11434/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: "llama3.2:latest",
-            messages: [
-              { "role": "user", "content": userPrompt }
-            ],
-            stream: false
-          })
-        });
+    const runtimeResponse = await AIRuntime.run({ systemPrompt, userPrompt });
 
-        if (!response.ok) {
-          throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        console.log("Ollama respondeu:", data);
-        return { text: data.message.content, source: 'Ollama 🦙 (Local)' };
-
-      } catch (e2) {
-        console.warn('Ollama falhou, usando Template', e2);
-
-        // 3️⃣ Template JS (Fallback Final)
-        return generateAdFromTemplate(userPrompt);
-      }
-    /*
+    // Mapeia a resposta do Runtime para o formato esperado pelo resto da classe.
+    let source: AIResponse['source'] = 'Template JS'; // Default
+    if (runtimeResponse.providerUsed === 'Ollama') {
+      source = 'Ollama 🦙 (Local)';
     }
-    */
+    // Adicionar outros providers aqui se necessário no futuro.
+
+    return {
+      text: runtimeResponse.output,
+      source: source,
+    };
   }
 
   /**
