@@ -1,0 +1,237 @@
+/* Utilities for Marketing Module */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background-color: var(--surface-1);
+  border: 1px solid var(--surface-3);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.btn-primary {
+  background-color: var(--brand-1);
+  color: var(--surface-1);
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1.5rem;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.btn-primary:hover {
+  opacity: 0.85;
+}
+
+/* Basic structure for the module */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+h1, h2, h3 {
+    color: var(--ink-1);
+}
+
+section {
+    margin-bottom: 2rem;
+}
+
+/* --- Modal & Utilities --- */
+.hidden {
+  display: none !important;
+}
+
+.btn-secondary {
+  background-color: var(--surface-2);
+  color: var(--ink-1);
+  border: 1px solid var(--surface-3);
+  font-weight: bold;
+  margin-right: 1rem;
+}
+.btn-secondary:hover {
+    background-color: var(--surface-3);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    /* CORREÇÃO DE CONTRASTE: */
+    background-color: #ffffff; /* Fundo Branco Puro */
+    color: #333333; /* Texto Cinza Escuro para leitura */
+    
+    /* Mantendo a estrutura anterior */
+    margin: 2% auto;
+    padding: 24px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    
+    /* Scroll e Sombra */
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5); /* Sombra mais forte para destacar do fundo */
+    position: relative;
+    padding-right: 10px; /* Para a scrollbar não colar no texto */
+}
+
+@keyframes slide-down {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  font-size: 2rem;
+  font-weight: lighter;
+  cursor: pointer;
+  color: var(--ink-3);
+}
+.modal-close:hover {
+    color: var(--ink-1);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--ink-2);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--surface-3);
+    border-radius: 6px;
+    background-color: var(--surface-2);
+    color: var(--ink-1);
+}
+
+#resultado-analise {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: var(--surface-2);
+    border-left: 4px solid var(--brand-1);
+    border-radius: 4px;
+}
+
+/* --- NeuroStrategy Feedback & Badges --- */
+#neuro-feedback {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+  display: none; /* Hidden by default */
+}
+#neuro-feedback.success {
+  display: block;
+  background-color: #d1e7dd;
+  border-left: 4px solid #198754;
+  color: #0f5132;
+}
+#neuro-feedback.warning {
+  display: block;
+  background-color: #fff3cd;
+  border-left: 4px solid #ffc107;
+  color: #664d03;
+}
+
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--surface-3);
+    border-radius: 6px;
+    background-color: var(--surface-2);
+    color: var(--ink-1);
+}
+
+.campaign-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    color: var(--surface-1);
+    background-color: var(--brand-2);
+}
+
+.card-actions {
+    margin-top: 1rem;
+}
+
+/* --- NeuroCopy Generator --- */
+.copy-block {
+  background-color: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  white-space: pre-wrap; /* Allows line breaks */
+  font-family: monospace;
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+
+/* --- SCROLLBAR CUSTOMIZADA (Dark UI) --- */
+
+/* Largura da barra */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+/* O fundo (Trilho) - Transparente para não poluir */
+::-webkit-scrollbar-track {
+    background: transparent; 
+}
+
+/* A barra (Thumb) - Cinza Escuro Suave */
+::-webkit-scrollbar-thumb {
+    background-color: #4a4a4a; /* Cinza médio */
+    border-radius: 4px; /* Bordas arredondadas */
+    border: 2px solid transparent; /* Espaço para parecer mais fina */
+    background-clip: content-box;
+}
+
+/* Quando passa o mouse */
+::-webkit-scrollbar-thumb:hover {
+    background-color: #6e6e6e; /* Cinza um pouco mais claro */
+}

@@ -1,0 +1,15 @@
+:root {
+  /* Surface Colors */
+  --surface-1: #FFFFFF;
+  --surface-2: #F8F9FA;
+  --surface-3: #E9ECEF;
+
+  /* Ink Colors */
+  --ink-1: #212529;
+  --ink-2: #495057;
+  --ink-3: #ADB5BD;
+
+  /* Brand Colors */
+  --brand-1: #0D6EFD;
+  --brand-2: #6C757D;
+}

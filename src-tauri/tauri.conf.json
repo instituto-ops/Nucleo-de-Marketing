@@ -1,0 +1,31 @@
+{
+  "identifier": "com.neurostrategy.os",
+  "productName": "NeuroStrategy OS",
+  "version": "0.1.0",
+
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "devUrl": "http://localhost:1420"
+  },
+
+  "app": {
+    "windows": [
+      {
+        "title": "NeuroStrategy OS",
+        "width": 1280,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ]
+  },
+
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.ico"
+    ]
+  }
+}

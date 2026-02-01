@@ -1,0 +1,1 @@
+// All types from this module are obsolete.
