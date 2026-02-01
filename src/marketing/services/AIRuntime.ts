@@ -1,62 +1,74 @@
 // src/marketing/services/AIRuntime.ts
-import { GeminiRealProvider } from "./providers/GeminiRealProvider";
-import { TemplateProvider } from "./providers/TemplateProvider";
-import { OllamaProvider } from "./providers/OllamaProvider";
-import { IARequest, IAResponse } from "./types/IAContracts";
+
+import { IAProvider, IAResponse } from './types/IAContracts'
+import { OllamaProvider } from './providers/OllamaProvider'
+import { TemplateProvider } from './providers/TemplateProvider'
+
+export type AIRuntimeLevel =
+  | 'ollama'
+  | 'template'
+
+export interface RuntimeAttempt {
+  level: AIRuntimeLevel
+  success: boolean
+  error?: string
+}
 
 /**
- * Runtime Central de IA.
- * Executa uma cadeia de providers em sequência até obter sucesso.
- * Projetado para ser inquebrável (nunca lança exceptions).
+ * AIRuntime — Runtime Canônico de IA
+ *
+ * Stack atual (alinhada ao filesystem):
+ * 1. Ollama (Qwen3-8B /no_think)
+ * 2. Template Engine (último recurso)
  */
 export class AIRuntime {
-  private providers: any[];
+  private readonly chain: {
+    level: AIRuntimeLevel
+    provider: IAProvider
+  }[]
 
   constructor() {
-    // A ordem define a prioridade de execução.
-    this.providers = [
-      GeminiRealProvider,
-      OllamaProvider,
-      TemplateProvider,
-    ];
+    this.chain = [
+      { level: 'ollama', provider: new OllamaProvider() },
+      { level: 'template', provider: new TemplateProvider() },
+    ]
   }
 
-  /**
-   * Executa a requisição de IA passando pela cadeia de providers.
-   * A ordem é sequencial e com fallback garantido.
-   * @param request O objeto de requisição `IARequest`.
-   * @returns Uma `Promise<IAResponse>` que sempre resolve.
-   */
-  async execute(request: IARequest): Promise<IAResponse> {
-    for (const provider of this.providers) {
+  async run(
+    prompt: string
+  ): Promise<
+    IAResponse & {
+      runtimeLevel: AIRuntimeLevel
+      attempts: RuntimeAttempt[]
+    }
+  > {
+    const attempts: RuntimeAttempt[] = []
+
+    for (const entry of this.chain) {
       try {
-        // Cada provider agora é uma classe com um método estático `run`.
-        const result = await provider.run(request);
-        
-        // A condição de sucesso é um output válido.
-        // O fallbackLevel < 0 é a marca de falha de um provider.
-        if (result && result.output && result.fallbackLevel >= 0) {
-          return result;
+        const response = await entry.provider.generate(prompt)
+
+        attempts.push({
+          level: entry.level,
+          success: true,
+        })
+
+        return {
+          ...response,
+          runtimeLevel: entry.level,
+          attempts,
         }
-        
-        console.warn(`AIRuntime: ${provider.name} failed or returned no output. Falling back.`);
-      } catch (error) {
-        const providerName = provider.name;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`AIRuntime: Unhandled exception in ${providerName}: ${errorMessage}. Falling back.`);
+      } catch (error: any) {
+        attempts.push({
+          level: entry.level,
+          success: false,
+          error: error?.message ?? 'unknown error',
+        })
       }
     }
 
-    // Fallback final e garantido se todos os outros falharem.
-    // O TemplateProvider é projetado para nunca falhar.
-    console.log("AIRuntime: All providers failed. Using final fallback TemplateProvider.");
-    return TemplateProvider.run(request);
-  }
-
-  // Método estático para manter a compatibilidade com o código existente
-  static async run(request: IARequest): Promise<IAResponse> {
-    const runtime = new AIRuntime();
-    return runtime.execute(request);
+    throw new Error(
+      'AIRuntime failed: no provider returned a valid response'
+    )
   }
 }
-
