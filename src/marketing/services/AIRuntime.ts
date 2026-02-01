@@ -1,5 +1,5 @@
 // src/marketing/services/AIRuntime.ts
-import { GeminiProvider } from "./providers/GeminiProvider";
+import { GeminiRealProvider } from "./providers/GeminiRealProvider";
 import { TemplateProvider } from "./providers/TemplateProvider";
 import { OllamaProvider } from "./providers/OllamaProvider";
 import { IARequest, IAResponse } from "./types/IAContracts";
@@ -13,10 +13,11 @@ export class AIRuntime {
   private providers: any[];
 
   constructor() {
+    // A ordem define a prioridade de execução.
     this.providers = [
-      new GeminiProvider(),
-      new OllamaProvider(),
-      new TemplateProvider(),
+      GeminiRealProvider,
+      OllamaProvider,
+      TemplateProvider,
     ];
   }
 
@@ -29,13 +30,18 @@ export class AIRuntime {
   async execute(request: IARequest): Promise<IAResponse> {
     for (const provider of this.providers) {
       try {
-        const result = await provider.generate(request);
-        if (result.success && result.output) {
+        // Cada provider agora é uma classe com um método estático `run`.
+        const result = await provider.run(request);
+        
+        // A condição de sucesso é um output válido.
+        // O fallbackLevel < 0 é a marca de falha de um provider.
+        if (result && result.output && result.fallbackLevel >= 0) {
           return result;
         }
-        console.warn(`AIRuntime: ${provider.constructor.name} failed or returned no output. Falling back.`);
+        
+        console.warn(`AIRuntime: ${provider.name} failed or returned no output. Falling back.`);
       } catch (error) {
-        const providerName = provider.constructor.name;
+        const providerName = provider.name;
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`AIRuntime: Unhandled exception in ${providerName}: ${errorMessage}. Falling back.`);
       }
@@ -43,7 +49,8 @@ export class AIRuntime {
 
     // Fallback final e garantido se todos os outros falharem.
     // O TemplateProvider é projetado para nunca falhar.
-    return new TemplateProvider().generate(request);
+    console.log("AIRuntime: All providers failed. Using final fallback TemplateProvider.");
+    return TemplateProvider.run(request);
   }
 
   // Método estático para manter a compatibilidade com o código existente

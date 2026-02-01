@@ -16,18 +16,18 @@ pub struct GeminiResponse {
 // --- Structs para a API Gemini (privadas ao módulo) ---
 
 #[derive(Serialize)]
-struct GeminiApiRequest<'a> {
-    contents: [GeminiApiContent<'a>; 1],
+struct GeminiApiRequest {
+    contents: [GeminiApiContent; 1],
 }
 
 #[derive(Serialize)]
-struct GeminiApiContent<'a> {
-    role: &'a str,
-    parts: [GeminiApiPart<'a>; 1],
+struct GeminiApiContent {
+    role: String,
+    parts: [GeminiApiPart; 1],
 }
 
 #[derive(Serialize)]
-struct GeminiApiPart<'a> {
+struct GeminiApiPart {
     text: String,
 }
 
@@ -61,7 +61,7 @@ pub async fn call_gemini(request: GeminiRequest) -> Result<GeminiResponse, Strin
     let request_body = GeminiApiRequest {
         contents: [
             GeminiApiContent {
-                role: "user",
+                role: "user".to_string(),
                 parts: [
                     GeminiApiPart {
                         text: format!("{}\n\n{}", request.system_prompt, request.user_prompt)
