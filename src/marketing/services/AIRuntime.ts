@@ -1,4 +1,5 @@
 // src/marketing/services/AIRuntime.ts
+import { GeminiProvider } from "./providers/GeminiProvider";
 import { TemplateProvider } from "./providers/TemplateProvider";
 import { OllamaProvider } from "./providers/OllamaProvider";
 import { IARequest, IAResponse } from "./types/IAContracts";
@@ -9,31 +10,46 @@ import { IARequest, IAResponse } from "./types/IAContracts";
  * Projetado para ser inquebrável (nunca lança exceptions).
  */
 export class AIRuntime {
+  private providers: any[];
+
+  constructor() {
+    this.providers = [
+      new GeminiProvider(),
+      new OllamaProvider(),
+      new TemplateProvider(),
+    ];
+  }
+
   /**
    * Executa a requisição de IA passando pela cadeia de providers.
    * A ordem é sequencial e com fallback garantido.
    * @param request O objeto de requisição `IARequest`.
    * @returns Uma `Promise<IAResponse>` que sempre resolve.
    */
-  static async run(request: IARequest): Promise<IAResponse> {
-    
-    // Nível 1: Tentar OllamaProvider (provider primário)
-    const ollamaResult = await OllamaProvider.run(request);
-
-    // Se o provider primário retornou um output válido, a execução termina com sucesso.
-    if (ollamaResult.output) {
-      return ollamaResult;
+  async execute(request: IARequest): Promise<IAResponse> {
+    for (const provider of this.providers) {
+      try {
+        const result = await provider.generate(request);
+        if (result.success && result.output) {
+          return result;
+        }
+        console.warn(`AIRuntime: ${provider.constructor.name} failed or returned no output. Falling back.`);
+      } catch (error) {
+        const providerName = provider.constructor.name;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`AIRuntime: Unhandled exception in ${providerName}: ${errorMessage}. Falling back.`);
+      }
     }
 
-    // Se Ollama falhou (ollamaResult.output é null), o runtime loga o erro
-    // e automaticamente aciona o próximo nível da cadeia (fallback).
-    console.warn(`AIRuntime: OllamaProvider failed (${ollamaResult.error}). Falling back to TemplateProvider.`);
+    // Fallback final e garantido se todos os outros falharem.
+    // O TemplateProvider é projetado para nunca falhar.
+    return new TemplateProvider().generate(request);
+  }
 
-    // Nível 2: Fallback para TemplateProvider (provider de segurança)
-    // Este provider é projetado para nunca falhar e sempre retornar uma resposta.
-    const templateResult = await TemplateProvider.run(request);
-    
-    return templateResult;
+  // Método estático para manter a compatibilidade com o código existente
+  static async run(request: IARequest): Promise<IAResponse> {
+    const runtime = new AIRuntime();
+    return runtime.execute(request);
   }
 }
 
