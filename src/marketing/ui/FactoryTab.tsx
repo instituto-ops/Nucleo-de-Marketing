@@ -159,6 +159,8 @@ export const FactoryTab: React.FC = () => {
                 throw err;
             }
 
+            console.log("DEBUG_NEUROENGINE_RAW:", data);
+            
             const adaptedData = adaptNeuroEnginePayload(data);
             const parsedData = parseCampaigns(adaptedData);
             setCampaigns(parsedData);

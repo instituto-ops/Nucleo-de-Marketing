@@ -15,7 +15,7 @@ pub struct OllamaResponse {
 }
 
 #[tauri::command]
-pub async fn call_ollama(
+pub async fn generate_response(
     request: OllamaRequest,
 ) -> Result<OllamaResponse, String> {
     let client = Client::new();
