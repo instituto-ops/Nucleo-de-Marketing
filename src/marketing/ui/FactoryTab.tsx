@@ -76,6 +76,7 @@ const adaptNeuroEnginePayload = (data: any) => {
 
         return {
             ...item,
+            nome: item.nome ?? item.name, // Garante a tradução de 'name' -> 'nome'
             plataforma,
             receita: typeof item.receita === 'number' ? item.receita : null,
             origem_dados: item.origem_dados ?? 'importado',

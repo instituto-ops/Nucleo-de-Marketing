@@ -42,7 +42,7 @@ ${userPrompt}
 `.trim()
 
     try {
-      const result = await invoke<{ output: string }>('call_ollama', {
+      const result = await invoke<{ output: string }>('generate_response', {
         request: { prompt: fullPrompt },
       })
 

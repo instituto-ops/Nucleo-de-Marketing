@@ -18,7 +18,7 @@ export class OllamaProvider implements IAProvider {
     try {
       const result = await invoke<{
         output: string
-      }>('call_ollama', {
+      }>('generate_response', {
         request: {
           prompt,
         },
