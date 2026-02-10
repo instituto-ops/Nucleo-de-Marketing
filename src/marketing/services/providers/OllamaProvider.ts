@@ -1,68 +1,43 @@
 // src/marketing/services/providers/OllamaProvider.ts
-import { IARequest, IAResponse } from "../types/IAContracts";
+
+import { invoke } from '@tauri-apps/api/core'
+import { IAProvider, IAResponse } from '../types/IAContracts'
 
 /**
- * Provider para o modelo de IA local via Ollama.
- * Nível 1 na cadeia de execução.
+ * OllamaProvider
+ *
+ * Provider local de IA via Ollama,
+ * executado através do backend Tauri (Rust).
+ *
+ * ✔ Sem CORS
+ * ✔ Sem fetch direto
+ * ✔ Compatível com AIRuntime canônico
  */
-export class OllamaProvider {
-  static async run(request: IARequest): Promise<IAResponse> {
+export class OllamaProvider implements IAProvider {
+  async generate(prompt: string): Promise<IAResponse> {
     try {
-      const response = await fetch('http://localhost:11434/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: "llama3.2:latest", // Pode ser parametrizado via request no futuro
-          messages: [
-            { "role": "system", "content": request.systemPrompt },
-            { "role": "user", "content": request.userPrompt }
-          ],
-          stream: false
-        })
-      });
+      const result = await invoke<{
+        output: string
+      }>('call_ollama', {
+        request: {
+          prompt,
+        },
+      })
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        const errorMessage = `Ollama API error: ${response.status} ${response.statusText} - ${errorText}`;
-        console.warn(errorMessage);
-        return {
-          output: null,
-          providerUsed: null,
-          fallbackLevel: -1,
-          error: errorMessage,
-        };
-      }
-      
-      const data = await response.json();
-      if (!data.message?.content) {
-        const errorMessage = 'Ollama returned empty message content';
-        console.warn(errorMessage);
-        return {
-          output: null,
-          providerUsed: null,
-          fallbackLevel: -1,
-          error: errorMessage,
-        };
+      if (!result?.output || typeof result.output !== 'string') {
+        throw new Error('Ollama retornou resposta vazia')
       }
 
-      // Sucesso
       return {
-        output: data.message.content,
-        providerUsed: 'ollama',
-        fallbackLevel: 0, // Sucesso no nível 0 (primário)
-      };
-
+        output: result.output,
+      }
     } catch (error: any) {
-      const errorMessage = `OllamaProvider fetch failed: ${error.message}`;
-      console.error(errorMessage);
-      // Retorna erro controlado SEMPRE, nunca lança exception
-      return {
-        output: null,
-        providerUsed: null,
-        fallbackLevel: -1,
-        error: errorMessage,
-      };
+      // Importante: lançar erro para o AIRuntime fazer fallback
+      throw new Error(
+        `OllamaProvider failed: ${
+          error?.message ?? error?.toString() ?? 'unknown error'
+        }`
+      )
     }
   }
 }
-

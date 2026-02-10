@@ -19,3 +19,7 @@ tauri = { version = "^2.0.0", features = [] }
 tauri-plugin-log = "2"
 reqwest = { version = "0.12", features = ["json"] }
 dotenvy = "0.15"
+
+# 👇 ADICIONEI ESTAS DUAS LINHAS ESSENCIAIS:
+tauri-plugin-http = "2"
+tauri-plugin-shell = "2"

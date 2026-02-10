@@ -1,43 +1,35 @@
 // src/marketing/services/AIService.ts
 
-import { NeuroContext } from "../types";
-import { getContextString } from "./NeuroLibrary";
-import { AIRuntime } from "./AIRuntime";
+import { invoke } from '@tauri-apps/api/core'
+import { NeuroContext } from '../types'
+import { getContextString } from './NeuroLibrary'
 
 /**
- * Resposta padrão da IA para o AIService
- * (mantém compatibilidade com a UI)
+ * Resposta padrão da IA para o frontend
+ * IA é sempre assistiva (nunca decisora)
  */
 interface AIResponse {
-  text: string | null;
-  source: 'Ollama 🦙 (Local)' | 'Template JS';
+  text: string | null
+  source: 'Ollama 🦙 (Local)' | 'Template JS'
 }
 
 export interface AdCopy {
-  titles: string;
-  descriptions: string;
-  negatives: string;
-  source: AIResponse['source'];
+  titles: string
+  descriptions: string
+  negatives: string
+  source: AIResponse['source']
 }
 
 /**
- * Serviço de Inteligência Artificial.
- * Encapsula a lógica de negócio e delega
- * a execução e fallback ao AIRuntime canônico.
+ * AIService
+ * Camada de orquestração de IA (sem decisão estratégica)
  */
 export class AIService {
-  private readonly runtime: AIRuntime;
-
-  constructor() {
-    this.runtime = new AIRuntime();
-  }
-
   /**
-   * Chamada central de IA.
-   * NÃO escolhe provider.
-   * NÃO faz fallback manual.
+   * Chamada central de IA via Tauri (Ollama local)
+   * NÃO contém lógica de negócio
    */
-  private async _callAI(
+  private async callAI(
     systemPrompt: string,
     userPrompt: string
   ): Promise<AIResponse> {
@@ -47,127 +39,163 @@ ${systemPrompt}
 
 [USER]
 ${userPrompt}
-    `.trim();
+`.trim()
 
-    const result = await this.runtime.run(fullPrompt);
+    try {
+      const result = await invoke<{ output: string }>('call_ollama', {
+        request: { prompt: fullPrompt },
+      })
 
-    let source: AIResponse['source'] = 'Template JS';
-    if (result.runtimeLevel === 'ollama') {
-      source = 'Ollama 🦙 (Local)';
+      return {
+        text: result.output,
+        source: 'Ollama 🦙 (Local)',
+      }
+    } catch (error) {
+      console.error('[AIService] Falha ao chamar Ollama:', error)
+
+      return {
+        text: null,
+        source: 'Template JS',
+      }
+    }
+  }
+
+  /**
+   * NeuroCopy — Geração de copy para Google Ads
+   * IA sugere. NeuroEngine valida.
+   */
+  async generateAdCopy(theme: string): Promise<AdCopy> {
+    const systemPrompt = `
+ATUE COMO:
+Estrategista de Marketing Clínico especializado em Google Ads para psicólogos.
+
+REGRAS ÉTICAS OBRIGATÓRIAS:
+- NÃO prometer cura
+- NÃO usar urgência ou escassez
+- NÃO usar termos milagrosos
+- NÃO usar linguagem sensacionalista
+- Linguagem profissional, acolhedora e clara
+`.trim()
+
+    const userPrompt = `
+TEMA DO ANÚNCIO:
+${theme}
+
+TAREFA:
+Gerar cópia FINAL para Google Ads.
+
+FORMATO DE SAÍDA (OBRIGATÓRIO — NÃO EXPLICAR NADA):
+
+TÍTULOS:
+1. <título curto, clínico e direto>
+2. <título curto, clínico e direto>
+3. <título curto, clínico e direto>
+
+DESCRIÇÕES:
+1. <descrição acolhedora, ética e profissional>
+2. <descrição acolhedora, ética e profissional>
+
+CONTEXTO FIXO:
+- Psicólogo clínico
+- Atendimento para adultos
+- Cidade: Goiânia
+- Público sensível (saúde mental)
+
+PROIBIDO:
+- Markdown
+- Emojis
+- Explicações
+- Comentários técnicos
+`.trim()
+
+    const response = await this.callAI(systemPrompt, userPrompt)
+    return this.processAdText(response)
+  }
+
+  /**
+   * Pós-processamento defensivo do texto da IA
+   * Garante contrato mínimo sempre
+   */
+  private processAdText(response: AIResponse): AdCopy {
+    const fallback: AdCopy = {
+      titles: 'Atendimento Psicológico em Goiânia',
+      descriptions: 'Acompanhamento ético e profissional para adultos.',
+      negatives: '-cura, -rápido, -grátis, -milagre',
+      source: response.source,
     }
 
-    return {
-      text: result.output ?? null,
-      source,
-    };
-  }
-
-  /**
-   * Gera cópia de anúncio (Google Ads).
-   */
-  public async generateAdCopy(theme: string): Promise<AdCopy> {
-    const systemPrompt =
-      'ATUE COMO: Estrategista de Marketing Clínico Ético (Google PMM). ' +
-      'REGRAS: Sem promessas de cura, sem escassez, sem urgência artificial. ' +
-      'Foque em validação, acolhimento e clareza.';
-
-    const userPrompt =
-      `Crie 3 títulos (máx. 30 caracteres cada) e ` +
-      `2 descrições (máx. 90 caracteres cada) para um anúncio ` +
-      `no Google Ads sobre: ${theme}.`;
-
-    const response = await this._callAI(systemPrompt, userPrompt);
-    return this._processAdText(response);
-  }
-
-  /**
-   * Processa o texto bruto da IA em estrutura de anúncio.
-   */
-  private _processAdText(response: AIResponse): AdCopy {
     if (!response.text) {
-      return {
-        titles: `Terapia para ${'tema'}`,
-        descriptions: 'Atendimento psicológico especializado.',
-        negatives: "-cura, -rápido, -grátis, -imediato",
-        source: response.source,
-      };
+      return fallback
     }
 
     const lines = response.text
       .split('\n')
       .map(l => l.trim())
-      .filter(Boolean);
+      .filter(Boolean)
 
-    const titles: string[] = [];
-    const descriptions: string[] = [];
+    const titles: string[] = []
+    const descriptions: string[] = []
 
     for (const line of lines) {
       const clean = line
         .replace(/^\d+\.\s*/, '')
+        .replace(/^(t[íi]tulos?|descri[çc][ãa]o)s?:/i, '')
         .replace(/["*]/g, '')
-        .replace(/t[íi]tulo:/i, '')
-        .replace(/descri[çc][ãa]o:/i, '')
-        .trim();
+        .trim()
 
-      if (!clean) continue;
+      if (!clean) continue
 
       if (clean.length <= 30 && titles.length < 3) {
-        titles.push(clean);
+        titles.push(clean)
       } else if (clean.length <= 90 && descriptions.length < 2) {
-        descriptions.push(clean);
+        descriptions.push(clean)
       }
+    }
+
+    if (titles.length === 0 || descriptions.length === 0) {
+      return fallback
     }
 
     return {
       titles: titles.join('\n'),
       descriptions: descriptions.join('\n'),
-      negatives: "-cura, -rápido, -grátis, -imediato",
+      negatives: '-cura, -rápido, -grátis, -milagre',
       source: response.source,
-    };
+    }
   }
 
   /**
-   * Envia mensagem estratégica ao "Sócio IA".
+   * Mensagem estratégica (modo consultivo)
    */
-  public async sendMessage(
+  async sendMessage(
     userMessage: string,
     contextData: NeuroContext
   ): Promise<AIResponse> {
-    const systemPrompt = this.buildSystemPrompt(contextData);
-    return this._callAI(systemPrompt, userMessage);
+    const systemPrompt = this.buildSystemPrompt(contextData)
+    return this.callAI(systemPrompt, userMessage)
   }
 
   /**
-   * Constrói o system prompt estratégico com base no contexto.
+   * Prompt estratégico com contexto ampliado
    */
   private buildSystemPrompt(contextData: NeuroContext): string {
-    const { visibilidade, interesseReal, alcance } = contextData;
-
-    const dadosDoMomento = `
-[DADOS DO MOMENTO]
-- Visibilidade (Doctoralia): ${visibilidade.doctoraliaViews} views
-- Interesse Real: ${interesseReal.topServices.join(', ') || 'Nenhum'}
-- Alcance Instagram: ${alcance.instagramReach || 0}
-    `.trim();
-
-    const bibliotecaMental = `
-[SUA BIBLIOTECA MENTAL]
-${getContextString()}
-    `.trim();
-
     return `
-ATUE COMO: Sócio Estratégico do Psicólogo Victor Lawrence.
-TOM DE VOZ: Direto, estratégico, humano e ético.
+ATUE COMO:
+Sócio Estratégico do Psicólogo Victor Lawrence.
 
-${dadosDoMomento}
+TOM:
+Direto, ético, analítico e acionável.
 
-${bibliotecaMental}
+CONTEXTO ATUAL:
+${JSON.stringify(contextData, null, 2)}
+
+BASE DE CONHECIMENTO:
+${getContextString()}
 
 OBJETIVO:
-Responder de forma acionável.
-Se visibilidade caiu → sugerir TOC ou Copy.
-Se está alta → sugerir conversão e autoridade.
-Use tom de parceiro: "Victor, a situação é..."
-    `.trim();
+- Diagnosticar situação
+- Sugerir ações práticas
+- Priorizar marketing ético e sustentável
+`.trim()
   }
 }
