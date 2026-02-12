@@ -35,3 +35,20 @@ Thumbs.db
 # ===============================
 logs/
 *.log
+
+# --- NeuroStrategy Automation Data ---
+# Dados de navegação e cookies (NUNCA SUBIR)
+scripts/user_data_google_ads/
+scripts/user_data/
+
+# Screenshots de Debug e Evidências
+scripts/*.png
+ads_evidence.png
+ads_debug.png
+
+# Bundles temporários
+*.bundle
+
+# Logs do Python/n8n
+*.log
+__pycache__/

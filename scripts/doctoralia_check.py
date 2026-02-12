@@ -3,6 +3,7 @@ import json
 import re
 import random
 import time
+import sys
 from datetime import datetime
 from urllib.parse import quote
 from playwright.async_api import async_playwright
@@ -81,7 +82,15 @@ async def get_reviews_count(page):
         return 0
     return 0
 
-async def main():
+async def main(batch_index):
+    BATCH_SIZE = 5
+    start_index = batch_index * BATCH_SIZE
+    batch = SEARCH_TERMS[start_index : start_index + BATCH_SIZE]
+
+    if not batch:
+        print(json.dumps([]))
+        return
+
     batch_results = []
     
     async with async_playwright() as p:
@@ -92,15 +101,14 @@ async def main():
         )
         page = await context.new_page()
 
-        # Extrai o número de reviews uma única vez no início
         reviews_count = await get_reviews_count(page)
 
-        for term in SEARCH_TERMS:
+        for term in batch:
             result_data = {
                 "termo_pesquisado": term,
                 "status": "erro",
                 "ranking_pos": -1,
-                "reviews_count": reviews_count, # Adiciona a contagem a cada objeto
+                "reviews_count": reviews_count,
                 "timestamp": datetime.now().isoformat()
             }
             
@@ -140,4 +148,14 @@ async def main():
         print(json.dumps(batch_results))
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    if len(sys.argv) < 2:
+        print("Usage: python doctoralia_check.py <batch_index>")
+        sys.exit(1)
+    
+    try:
+        batch_index = int(sys.argv[1])
+    except ValueError:
+        print("Batch index must be an integer.")
+        sys.exit(1)
+        
+    asyncio.run(main(batch_index))

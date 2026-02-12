@@ -2,22 +2,24 @@ import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { NeuroContext } from '../types';
-import { Radar, BrainCircuit, Library, Factory, Settings2 as Settings, Home, DollarSign } from 'lucide-react';
+import { Radar, BrainCircuit, Library, Factory, Settings, Home, DollarSign, Settings2 } from 'lucide-react';
 import { StrategyView } from './StrategyView';
 import { knowledgeBase } from '../services/NeuroLibrary';
 import { RadarTab } from './RadarTab';
 import { FactoryTab } from './FactoryTab';
 import { LibraryTab } from './LibraryTab';
 import { DataTab } from './DataTab';
+import { SettingsTab } from './SettingsTab';
 
-type Tab = 'radar' | 'strategy' | 'library' | 'data' | 'ads';
+type Tab = 'radar' | 'strategy' | 'library' | 'data' | 'ads' | 'settings';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'radar', label: 'Radar', icon: Radar },
     { id: 'strategy', label: 'Estratégia', icon: BrainCircuit },
     { id: 'library', label: 'Biblioteca', icon: Library },
-    { id: 'data', label: 'Dados', icon: Settings },
+    { id: 'data', label: 'Dados', icon: Settings2 },
     { id: 'ads', label: 'Campanhas', icon: DollarSign },
+    { id: 'settings', label: 'Configurações', icon: Settings },
 ];
 
 const NavItem: React.FC<{
@@ -78,6 +80,7 @@ export const MarketingDashboard = () => {
       case 'library': return <LibraryTab />;
       case 'data': return <DataTab />;
       case 'ads': return <FactoryTab />;
+      case 'settings': return <SettingsTab />;
       default: return <RadarTab />;
     }
   };
