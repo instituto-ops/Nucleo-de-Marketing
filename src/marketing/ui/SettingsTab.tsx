@@ -1,27 +1,36 @@
 import React, { useState } from 'react';
 import { Shield, Key, RefreshCw, CheckCircle, AlertTriangle, Terminal } from 'lucide-react';
-import { Command } from '@tauri-apps/api/shell';
+import { Command } from '@tauri-apps/plugin-shell';
 
 export const SettingsTab: React.FC = () => {
   const [loadingAds, setLoadingAds] = useState(false);
-  const [adsStatus, setAdsStatus] = useState<'connected' | 'disconnected'>('connected'); // Mock inicial
+  const [adsStatus, setAdsStatus] = useState<'connected' | 'disconnected'>('connected'); 
 
   const handleRenovarSessao = async () => {
     setLoadingAds(true);
     try {
-      // Tenta executar o comando Tauri (se configurado no allowlist)
-      // Se não estiver configurado, apenas simula para UI
-      console.log("Iniciando processo de login...");
-
-      // NOTA: Em produção, isso chamaria o Command definido no tauri.conf.json
-      // Por enquanto, simulamos o delay do usuário fazendo login
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log("🚀 Iniciando subsistema de login via Python...");
       
-      alert("Comando enviado! O navegador deve abrir em instantes. Faça o login e feche a janela.");
-      setAdsStatus('connected');
+      // Cria o comando usando a sintaxe V2
+      const command = await Command.create('python', [
+        'scripts/google_ads_manager.py', 
+        '--login'
+      ]);
+
+      const child = await command.execute();
+      
+      if (child.code === 0) {
+        alert("✅ Sessão renovada! O robô capturou os cookies com sucesso.");
+        setAdsStatus('connected');
+      } else {
+        console.error("Erro stderr:", child.stderr);
+        alert(`⚠️ O script rodou mas reportou erro: ${child.stderr}`);
+        setAdsStatus('disconnected');
+      }
+
     } catch (error) {
-      console.error(error);
-      alert("Erro ao iniciar script de login.");
+      console.error("Falha crítica ao lançar comando:", error);
+      alert("❌ Erro de Execução: Verifique o console e se o App foi reiniciado.");
     } finally {
       setLoadingAds(false);
     }
@@ -37,7 +46,6 @@ export const SettingsTab: React.FC = () => {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Card Google Ads */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center gap-3">

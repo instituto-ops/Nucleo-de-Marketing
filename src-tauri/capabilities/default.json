@@ -1,23 +1,27 @@
 {
-  "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "enables the default permissions",
-  "windows": [
-    "main"
-  ],
+  "description": "Capability for the main window",
+  "windows": ["main"],
   "permissions": [
     "core:default",
-    "core:path:default",
+    "core:window:default",
+    "core:webview:default",
+    "shell:allow-open",
     {
-      "identifier": "http:default",
+      "identifier": "shell:allow-execute",
       "allow": [
         {
-          "url": "http://127.0.0.1:11434/*"
+          "name": "python",
+          "cmd": "python",
+          "args": true
         },
         {
-          "url": "http://localhost:11434/*"
+          "name": "google-ads-login",
+          "cmd": "python",
+          "args": ["scripts/google_ads_manager.py", "--login"]
         }
       ]
     }
-  ]
+  ],
+  "platforms": ["windows", "macOS", "linux"]
 }

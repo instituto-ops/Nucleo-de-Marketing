@@ -52,3 +52,6 @@ ads_debug.png
 # Logs do Python/n8n
 *.log
 __pycache__/
+
+# Local Python Distribution
+Python/
